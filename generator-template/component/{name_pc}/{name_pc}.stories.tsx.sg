@@ -1,0 +1,13 @@
+import type { Meta } from '@storybook/react';
+
+import {{name_pc}} from './{{name_pc}}';
+import { createTextTemplate } from '../../../helpers/storybook/stories';
+
+export default {
+  title: '{{name_pc}}',
+  component: {{name_pc}},
+} as Meta;
+
+const Template = createTextTemplate({{name_pc}});
+
+export const Default = Template.bind({});
