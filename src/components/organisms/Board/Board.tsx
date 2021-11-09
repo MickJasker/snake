@@ -9,6 +9,11 @@ export type BoardProps = {
   onGameOver?: () => void;
 };
 
+interface Position {
+  row: number;
+  column: number;
+}
+
 export default function Board({ size, onGameOver, keyboardDirection }: BoardProps): JSX.Element {
   const cellAmount = size * size;
   const cellArray = Array.from(new Array(cellAmount).keys());
@@ -17,6 +22,10 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
     row: 2,
     column: 2,
   });
+
+  const [bodyLength] = useState(12);
+
+  const [visitedTiles, setVisitedTiles] = useState<ReadonlyArray<Position>>([]);
 
   const [isGameOver, setIsGameOver] = useState(false);
 
@@ -34,7 +43,11 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
 
   function checkGameOverState(): boolean {
     if (activeCell.row > size || activeCell.column > size) return true;
+
     if (activeCell.row <= 0 || activeCell.column <= 0) return true;
+
+    if (isTilePartOfBody(activeCell)) return true;
+
     return false;
   }
 
@@ -66,6 +79,8 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
       });
     }
 
+    setVisitedTiles([...visitedTiles, activeCell]);
+
     if (checkGameOverState()) {
       setIsGameOver(true);
 
@@ -73,15 +88,29 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
     }
   }, 100);
 
+  function isTilePartOfBody(position: Position): boolean {
+    if (bodyLength <= 1) return false;
+    return (
+      visitedTiles
+        .slice(bodyLength * -1)
+        .filter((element) => element.row === position.row && element.column === position.column)
+        .length > 0
+    );
+  }
+
   return (
     <StyledBoard width={size}>
       {cellArray.map((item) => {
         const row = Math.ceil((item + 1) / size);
         const column = Math.round(((item + 1) / size + 1 - row) * size);
+        const position: Position = { row, column };
         return (
           <StyledCell
-            active={activeCell.row === row && activeCell.column === column}
-            data-pos={`${row}/${column}`}
+            active={
+              (activeCell.row === position.row && activeCell.column === position.column) ||
+              isTilePartOfBody(position)
+            }
+            data-pos={`${position.row}/${position.column}`}
             data-item={item + 1}
             key={item}
           />
