@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const StyledBoard = styled.div<{
   width: number;
@@ -10,8 +10,14 @@ export const StyledBoard = styled.div<{
   border: solid 1px #555;
 `;
 
-export const StyledCell = styled.div`
+export const StyledCell = styled.div<{ active: boolean }>`
   background: #000;
   width: 20px;
   height: 20px;
+
+  ${({ active }) =>
+    active &&
+    css`
+      background: red;
+    `}
 `;
