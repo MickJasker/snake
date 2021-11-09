@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { StyledBoard, StyledCell } from './Board.style';
 import useTick from '../../../hooks/useTick';
 import Direction from '../../../data/Direction';
+import useMount from '../../../hooks/useMount';
 
 export type BoardProps = {
   size: number;
   keyboardDirection: Direction | null;
   onGameOver?: () => void;
+  onScoreIncrease?: () => void;
 };
 
 interface Position {
@@ -14,7 +16,12 @@ interface Position {
   column: number;
 }
 
-export default function Board({ size, onGameOver, keyboardDirection }: BoardProps): JSX.Element {
+export default function Board({
+  size,
+  onGameOver,
+  keyboardDirection,
+  onScoreIncrease,
+}: BoardProps): JSX.Element {
   const cellAmount = size * size;
   const cellArray = Array.from(new Array(cellAmount).keys());
 
@@ -23,13 +30,23 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
     column: 2,
   });
 
-  const [bodyLength] = useState(12);
+  const [bodyLength, setBodyLength] = useState(1);
 
   const [visitedTiles, setVisitedTiles] = useState<ReadonlyArray<Position>>([]);
 
-  const [isGameOver, setIsGameOver] = useState(false);
-
   const [direction, setDirection] = useState<Direction>(Direction.Right);
+
+  const [objective, setObjective] = useState<Position>({ row: 0, column: 0 });
+
+  function placeObjective() {
+    const column = Math.ceil(Math.random() * size);
+    const row = Math.ceil(Math.random() * size);
+
+    setObjective({
+      column,
+      row,
+    });
+  }
 
   useEffect(() => {
     if (keyboardDirection === null) return;
@@ -51,9 +68,9 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
     return false;
   }
 
-  useTick(() => {
-    if (isGameOver) return;
+  useMount(placeObjective);
 
+  useTick(() => {
     if (direction === Direction.Up) {
       setActiveCell({
         row: activeCell.row - 1,
@@ -79,10 +96,21 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
       });
     }
 
-    setVisitedTiles([...visitedTiles, activeCell]);
+    if (bodyLength > 1) setVisitedTiles([...visitedTiles, activeCell].slice(bodyLength * -1));
+
+    if (activeCell.row === objective.row && activeCell.column === objective.column) {
+      setBodyLength(bodyLength + 4);
+      placeObjective();
+
+      if (onScoreIncrease) onScoreIncrease();
+    }
 
     if (checkGameOverState()) {
-      setIsGameOver(true);
+      setActiveCell({ row: 2, column: 2 });
+      setDirection(Direction.Right);
+      setVisitedTiles([]);
+      setBodyLength(0);
+      placeObjective();
 
       if (onGameOver) onGameOver();
     }
@@ -91,10 +119,9 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
   function isTilePartOfBody(position: Position): boolean {
     if (bodyLength <= 1) return false;
     return (
-      visitedTiles
-        .slice(bodyLength * -1)
-        .filter((element) => element.row === position.row && element.column === position.column)
-        .length > 0
+      visitedTiles.filter(
+        (element) => element.row === position.row && element.column === position.column,
+      ).length > 0
     );
   }
 
@@ -110,6 +137,7 @@ export default function Board({ size, onGameOver, keyboardDirection }: BoardProp
               (activeCell.row === position.row && activeCell.column === position.column) ||
               isTilePartOfBody(position)
             }
+            objective={objective.row === position.row && objective.column === position.column}
             data-pos={`${position.row}/${position.column}`}
             data-item={item + 1}
             key={item}

@@ -10,10 +10,16 @@ export const StyledBoard = styled.div<{
   border: solid 1px #555;
 `;
 
-export const StyledCell = styled.div<{ active: boolean }>`
+export const StyledCell = styled.div<{ active: boolean; objective: boolean }>`
   background: #000;
   width: 20px;
   height: 20px;
+
+  ${({ objective }) =>
+    objective &&
+    css`
+      background: blue;
+    `}
 
   ${({ active }) =>
     active &&
